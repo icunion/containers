@@ -1,0 +1,33 @@
+FROM php:8.3-fpm-alpine as base
+# Install packages
+RUN apk add zlib zlib-dev libpng libpng-dev openldap openldap-dev imagemagick imagemagick-dev oniguruma-dev autoconf libgomp yaml yaml-dev icu-dev
+
+# Install phpize extension build deps
+RUN apk add --no-cache --virtual .phpize-deps-configure $PHPIZE_DEPS
+
+# Install sqlsrv deps
+RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
+RUN cd /tmp && \
+    curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.2.1-1_amd64.apk && \
+    curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/mssql-tools18_18.3.1.1-1_amd64.apk && \
+    apk add --allow-untrusted msodbcsql18_18.3.2.1-1_amd64.apk && \
+    apk add --allow-untrusted mssql-tools18_18.3.1.1-1_amd64.apk
+
+# Install PECL extensions: we do these first as docker-php-ext-install will clean up the phpize deps
+RUN pecl install imagick && docker-php-ext-enable imagick
+RUN pecl install redis && docker-php-ext-enable redis
+RUN pecl install yaml && docker-php-ext-enable yaml
+RUN pecl install pdo_sqlsrv && \
+    pecl install sqlsrv && \
+    docker-php-ext-enable pdo_sqlsrv sqlsrv
+
+# Install core extensions
+RUN docker-php-ext-configure gd && \
+    docker-php-ext-install -j$(nproc) gd
+RUN docker-php-ext-configure ldap && \
+    docker-php-ext-install -j$(nproc) ldap
+RUN docker-php-ext-configure intl && \
+    docker-php-ext-install -j$(nproc) intl
+
+# Install composer
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
