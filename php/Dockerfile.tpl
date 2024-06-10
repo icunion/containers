@@ -15,7 +15,7 @@ RUN cd /tmp && \
 
 # Install PECL extensions: we do these first as docker-php-ext-install will clean up the phpize deps
 RUN pecl install imagick && docker-php-ext-enable imagick
-RUN pecl install redis && docker-php-ext-enable redis
+RUN pecl install redis-5.3.7 && docker-php-ext-enable redis
 RUN pecl install yaml && docker-php-ext-enable yaml
 RUN pecl install pdo_sqlsrv && \
     pecl install sqlsrv && \
