@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine as base
+FROM php:8.3-fpm-alpine AS base
 # Install packages
 RUN apk add zlib zlib-dev libpng libpng-dev openldap openldap-dev imagemagick imagemagick-dev oniguruma-dev autoconf libgomp yaml yaml-dev icu-dev
 
@@ -28,6 +28,8 @@ RUN docker-php-ext-configure ldap && \
     docker-php-ext-install -j$(nproc) ldap
 RUN docker-php-ext-configure intl && \
     docker-php-ext-install -j$(nproc) intl
+RUN docker-php-ext-configure opcache && \
+    docker-php-ext-install -j$(nproc) opcache
 
 # Install composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
