@@ -9,4 +9,5 @@ variants:
       ms_alpine_base_url: "https://download.microsoft.com/download/7/6/d/76de322a-d860-4894-9945-f0cc5d6a45f8"
       msodbcsql_package_version: "18.4.1.1-1"
       mssql_tools_package_version: "18.4.1.1-1"
+      relay_version: "v0.11.0"
   {{ end }}

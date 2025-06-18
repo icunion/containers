@@ -1,9 +1,7 @@
 FROM php:8.2-fpm-alpine AS base
-# Install packages
-RUN apk add zlib zlib-dev libpng libpng-dev openldap openldap-dev imagemagick imagemagick-dev oniguruma-dev autoconf libgomp yaml yaml-dev icu-dev
 
-# Install phpize extension build deps
-RUN apk add --no-cache --virtual .phpize-deps-configure $PHPIZE_DEPS
+# Install main required packages
+RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-libs
 
 # Install sqlsrv deps
 RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
@@ -14,23 +12,61 @@ RUN cd /tmp && \
     apk add --allow-untrusted mssql-tools18_18.4.1.1-1_amd64.apk
 
 # Install PECL extensions: we do these first as docker-php-ext-install will clean up the phpize deps
-RUN pecl install imagick && docker-php-ext-enable imagick
-RUN pecl install redis-5.3.7 && docker-php-ext-enable redis
-RUN pecl install yaml && docker-php-ext-enable yaml
-RUN pecl install apcu && docker-php-ext-enable apcu
-RUN pecl install pdo_sqlsrv && \
+RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS zlib-dev libpng-dev imagemagick-dev oniguruma-dev ghostscript-dev && \
+    pecl install imagick && \
+    docker-php-ext-enable imagick && \
+    apk del --no-network .icu-build-deps
+RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS yaml-dev && \
+    pecl install yaml && \
+    docker-php-ext-enable yaml && \
+    apk del --no-network .icu-build-deps
+RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+    pecl install apcu && \
+    docker-php-ext-enable apcu && \
+    apk del --no-network .icu-build-deps
+RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+    pecl install pdo_sqlsrv && \
     pecl install sqlsrv && \
-    docker-php-ext-enable pdo_sqlsrv sqlsrv
+    docker-php-ext-enable pdo_sqlsrv sqlsrv && \
+    apk del --no-network .icu-build-deps
+# msgpack and igbinary required for Relay
+RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+    pecl install msgpack && \
+    pecl install igbinary && \
+    docker-php-ext-enable igbinary msgpack && \
+    apk del --no-network .icu-build-deps
 
 # Install core extensions
-RUN docker-php-ext-configure gd && \
-    docker-php-ext-install -j$(nproc) gd
-RUN docker-php-ext-configure ldap && \
-    docker-php-ext-install -j$(nproc) ldap
-RUN docker-php-ext-configure intl && \
-    docker-php-ext-install -j$(nproc) intl
+RUN apk add --no-cache libpng-dev && \
+    docker-php-ext-configure gd && \
+    docker-php-ext-install -j$(nproc) gd && \
+    apk del --no-network libpng-dev
+RUN apk add --no-cache openldap-dev && \
+    docker-php-ext-configure ldap && \
+    docker-php-ext-install -j$(nproc) ldap && \
+    apk del --no-cache openldap-dev
+RUN apk add --no-cache icu-dev && \
+    docker-php-ext-configure intl && \
+    docker-php-ext-install -j$(nproc) intl && \
+    apk del --no-cache icu-dev
 RUN docker-php-ext-configure opcache && \
     docker-php-ext-install -j$(nproc) opcache
+
+# Install Relay:
+# Install deps
+RUN apk add ck hiredis=1.1.0-r2 hiredis-ssl=1.1.0-r2 lz4-libs zstd-libs --repository=http://dl-cdn.alpinelinux.org/alpine/v3.18/main
+
+# Download Relay
+RUN PLATFORM=$(uname -m | sed 's/_/-/') \
+    && curl -L "https://builds.r2.relay.so/v0.11.0/relay-v0.11.0-php8.2-alpine3.17-$PLATFORM.tar.gz" | tar xz -C /tmp
+
+# Copy relay.{so,ini}
+RUN PLATFORM=$(uname -m | sed 's/_/-/') \
+    && cp "/tmp/relay-v0.11.0-php8.2-alpine3.17-$PLATFORM/relay.ini" $(php-config --ini-dir)/docker-php-ext-relay.ini \
+    && cp "/tmp/relay-v0.11.0-php8.2-alpine3.17-$PLATFORM/relay.so" $(php-config --extension-dir)/relay.so
+
+# Inject UUID
+RUN sed -i "s/00000000-0000-0000-0000-000000000000/$(cat /proc/sys/kernel/random/uuid)/" $(php-config --extension-dir)/relay.so
 
 # Install composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
