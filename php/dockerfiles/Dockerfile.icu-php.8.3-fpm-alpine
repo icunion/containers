@@ -1,7 +1,7 @@
 FROM php:8.3-fpm-alpine AS base
 
 # Install main required packages
-RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-libs
+RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-libs freetype libjpeg-turbo libwebp
 
 # Install sqlsrv deps
 RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
@@ -37,10 +37,10 @@ RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
     apk del --no-network .icu-build-deps
 
 # Install core extensions
-RUN apk add --no-cache libpng-dev && \
-    docker-php-ext-configure gd && \
+RUN apk add --no-cache --virtual .icu-build-deps freetype-dev libpng-dev libjpeg-turbo-dev libwebp-dev && \
+    docker-php-ext-configure gd --with-freetype --with-webp --with-jpeg && \
     docker-php-ext-install -j$(nproc) gd && \
-    apk del --no-network libpng-dev
+    apk del --no-network .icu-build-deps
 RUN apk add --no-cache openldap-dev && \
     docker-php-ext-configure ldap && \
     docker-php-ext-install -j$(nproc) ldap && \
