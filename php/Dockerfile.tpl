@@ -6,8 +6,8 @@ RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-li
 # Install sqlsrv deps
 RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
 RUN cd /tmp && \
-    curl -O {{ .ms_alpine_base_url }}/msodbcsql{{ .msodbc_version }}_{{ .msodbcsql_package_version }}_amd64.apk && \
-    curl -O {{ .ms_alpine_base_url }}/mssql-tools{{ .msodbc_version }}_{{ .mssql_tools_package_version }}_amd64.apk && \
+    curl -O {{ .msodbcsql_package_base_url }}/msodbcsql{{ .msodbc_version }}_{{ .msodbcsql_package_version }}_amd64.apk && \
+    curl -O {{ .mssql_tools_package_base_url }}/mssql-tools{{ .msodbc_version }}_{{ .mssql_tools_package_version }}_amd64.apk && \
     apk add --allow-untrusted msodbcsql{{ .msodbc_version }}_{{ .msodbcsql_package_version }}_amd64.apk && \
     apk add --allow-untrusted mssql-tools{{ .msodbc_version }}_{{ .mssql_tools_package_version }}_amd64.apk
 

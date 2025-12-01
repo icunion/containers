@@ -6,9 +6,9 @@ RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-li
 # Install sqlsrv deps
 RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
 RUN cd /tmp && \
-    curl -O https://download.microsoft.com/download/7/6/d/76de322a-d860-4894-9945-f0cc5d6a45f8/msodbcsql18_18.4.1.1-1_amd64.apk && \
+    curl -O https://download.microsoft.com/download/fae28b9a-d880-42fd-9b98-d779f0fdd77f/msodbcsql18_18.5.1.1-1_amd64.apk && \
     curl -O https://download.microsoft.com/download/7/6/d/76de322a-d860-4894-9945-f0cc5d6a45f8/mssql-tools18_18.4.1.1-1_amd64.apk && \
-    apk add --allow-untrusted msodbcsql18_18.4.1.1-1_amd64.apk && \
+    apk add --allow-untrusted msodbcsql18_18.5.1.1-1_amd64.apk && \
     apk add --allow-untrusted mssql-tools18_18.4.1.1-1_amd64.apk
 
 # Install PECL extensions: we do these first as docker-php-ext-install will clean up the phpize deps
@@ -58,12 +58,12 @@ RUN apk add ck hiredis=1.1.0-r2 hiredis-ssl=1.1.0-r2 lz4-libs zstd-libs --reposi
 
 # Download Relay
 RUN PLATFORM=$(uname -m | sed 's/_/-/') \
-    && curl -L "https://builds.r2.relay.so/v0.11.0/relay-v0.11.0-php8.3-alpine3.17-$PLATFORM.tar.gz" | tar xz -C /tmp
+    && curl -L "https://builds.r2.relay.so/v0.20.0/relay-v0.20.0-php8.3-alpine3.17-$PLATFORM.tar.gz" | tar xz -C /tmp
 
 # Copy relay.{so,ini}
 RUN PLATFORM=$(uname -m | sed 's/_/-/') \
-    && cp "/tmp/relay-v0.11.0-php8.3-alpine3.17-$PLATFORM/relay.ini" $(php-config --ini-dir)/docker-php-ext-relay.ini \
-    && cp "/tmp/relay-v0.11.0-php8.3-alpine3.17-$PLATFORM/relay.so" $(php-config --extension-dir)/relay.so
+    && cp "/tmp/relay-v0.20.0-php8.3-alpine3.17-$PLATFORM/relay.ini" $(php-config --ini-dir)/docker-php-ext-relay.ini \
+    && cp "/tmp/relay-v0.20.0-php8.3-alpine3.17-$PLATFORM/relay.so" $(php-config --extension-dir)/relay.so
 
 # Inject UUID
 RUN sed -i "s/00000000-0000-0000-0000-000000000000/$(cat /proc/sys/kernel/random/uuid)/" $(php-config --extension-dir)/relay.so
