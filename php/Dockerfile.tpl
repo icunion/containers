@@ -49,8 +49,10 @@ RUN apk add --no-cache icu-dev && \
     docker-php-ext-configure intl && \
     docker-php-ext-install -j$(nproc) intl && \
     apk del --no-cache icu-dev
+{{if ne .php_version "8.5" }}
 RUN docker-php-ext-configure opcache && \
     docker-php-ext-install -j$(nproc) opcache
+{{end}}
 
 # Install Relay:
 # Install deps
