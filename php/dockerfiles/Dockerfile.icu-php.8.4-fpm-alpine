@@ -6,10 +6,10 @@ RUN apk add zlib libpng openldap imagemagick imagemagick-pdf libgomp yaml icu-li
 # Install sqlsrv deps
 RUN apk add --no-cache curl unixodbc unixodbc-dev ca-certificates && update-ca-certificates
 RUN cd /tmp && \
-    curl -O https://download.microsoft.com/download/0b3d5518-b4a7-4a2b-afc7-7ee9e967f93c/msodbcsql18_18.6.2.1-1_amd64.apk && \
-    curl -O https://download.microsoft.com/download/cad0d30f-b9b1-4765-a011-81d8a66c8b8d/mssql-tools18_18.6.2.1-1_amd64.apk && \
-    apk add --allow-untrusted msodbcsql18_18.6.2.1-1_amd64.apk && \
-    apk add --allow-untrusted mssql-tools18_18.6.2.1-1_amd64.apk
+    curl -O https://download.microsoft.com/download/ade174b7-8cea-4543-91a6-c33ae320c2f0/msodbcsql18_18.7.1.1-1_amd64.apk && \
+    curl -O https://download.microsoft.com/download/a5dcc5e7-6124-49d3-8df4-48d738a0e784/mssql-tools18_18.7.1.1-1_amd64.apk && \
+    apk add --allow-untrusted msodbcsql18_18.7.1.1-1_amd64.apk && \
+    apk add --allow-untrusted mssql-tools18_18.7.1.1-1_amd64.apk
 
 # Install non-core extensions
 RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
