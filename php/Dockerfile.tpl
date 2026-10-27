@@ -11,29 +11,27 @@ RUN cd /tmp && \
     apk add --allow-untrusted msodbcsql{{ .msodbc_version }}_{{ .msodbcsql_package_version }}_amd64.apk && \
     apk add --allow-untrusted mssql-tools{{ .msodbc_version }}_{{ .mssql_tools_package_version }}_amd64.apk
 
-# Install PECL extensions: we do these first as docker-php-ext-install will clean up the phpize deps
-RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS zlib-dev libpng-dev imagemagick-dev oniguruma-dev ghostscript-dev && \
-    pecl install imagick && \
+# Install non-core extensions
+RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
+    apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS zlib-dev libpng-dev imagemagick-dev oniguruma-dev ghostscript-dev && \
+    pie install imagick/imagick && \
     docker-php-ext-enable imagick && \
     apk del --no-network .icu-build-deps
-RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS yaml-dev && \
-    pecl install yaml && \
+RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
+    apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS yaml-dev && \
+    pie install pecl/yaml && \
     docker-php-ext-enable yaml && \
     apk del --no-network .icu-build-deps
-RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
-    pecl install apcu && \
+RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
+    apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+    pie install apcu/apcu && \
     docker-php-ext-enable apcu && \
     apk del --no-network .icu-build-deps
-RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
-    pecl install pdo_sqlsrv && \
-    pecl install sqlsrv && \
+RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
+    apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+    pie install microsoft/pdo_sqlsrv && \
+    pie install microsoft/sqlsrv && \
     docker-php-ext-enable pdo_sqlsrv sqlsrv && \
-    apk del --no-network .icu-build-deps
-# msgpack and igbinary required for Relay
-RUN apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
-    pecl install msgpack && \
-    pecl install igbinary && \
-    docker-php-ext-enable igbinary msgpack && \
     apk del --no-network .icu-build-deps
 
 # Install core extensions
@@ -53,22 +51,6 @@ RUN apk add --no-cache icu-dev && \
 RUN docker-php-ext-configure opcache && \
     docker-php-ext-install -j$(nproc) opcache
 {{end}}
-
-# Install Relay:
-# Install deps
-RUN apk add ck hiredis=1.1.0-r2 hiredis-ssl=1.1.0-r2 lz4-libs zstd-libs --repository=http://dl-cdn.alpinelinux.org/alpine/v3.18/main
-
-# Download Relay
-RUN PLATFORM=$(uname -m | sed 's/_/-/') \
-    && curl -L "https://builds.r2.relay.so/{{ .relay_version }}/relay-{{ .relay_version }}-php{{ .php_version }}-alpine3.17-$PLATFORM.tar.gz" | tar xz -C /tmp
-
-# Copy relay.{so,ini}
-RUN PLATFORM=$(uname -m | sed 's/_/-/') \
-    && cp "/tmp/relay-{{ .relay_version }}-php{{ .php_version }}-alpine3.17-$PLATFORM/relay.ini" $(php-config --ini-dir)/docker-php-ext-relay.ini \
-    && cp "/tmp/relay-{{ .relay_version }}-php{{ .php_version }}-alpine3.17-$PLATFORM/relay.so" $(php-config --extension-dir)/relay.so
-
-# Inject UUID
-RUN sed -i "s/00000000-0000-0000-0000-000000000000/$(cat /proc/sys/kernel/random/uuid)/" $(php-config --extension-dir)/relay.so
 
 # Install composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
