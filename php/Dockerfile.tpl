@@ -29,8 +29,14 @@ RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin
     apk del --no-network .icu-build-deps
 RUN --mount=type=bind,from=ghcr.io/php/pie:bin,source=/pie,target=/usr/local/bin/pie \
     apk add --no-cache --virtual .icu-build-deps $PHPIZE_DEPS && \
+{{- if eq .php_version "8.3" }}
+    # See https://github.com/microsoft/msphpsql/issues/1696
+    pie install microsoft/pdo_sqlsrv:5.13.3 && \
+    pie install microsoft/sqlsrv:5.13.3 && \
+{{- else}}
     pie install microsoft/pdo_sqlsrv && \
     pie install microsoft/sqlsrv && \
+{{- end}}
     docker-php-ext-enable pdo_sqlsrv sqlsrv && \
     apk del --no-network .icu-build-deps
 
